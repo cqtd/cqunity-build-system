@@ -1,0 +1,10 @@
+{
+  "name": "com.cqtd.build-system",
+  "displayName": "Build System",
+  "version": "0.0.1",
+  "author": {
+  	"name": "Cqunity",
+  	"url": "https://github.com/cqtd",
+  	"email": "cqtd@pm.me"
+  }
+}
