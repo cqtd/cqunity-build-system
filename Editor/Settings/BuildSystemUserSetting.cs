@@ -2,13 +2,12 @@
 using System.IO;
 using System.Text;
 using UnityEditor;
-using UnityEditor.Build.Content;
 using UnityEngine;
 
 namespace Cqunity.BuildSystem
 {
 	[Serializable]
-	public class GlobalSettingContext : IEquatable<GlobalSettingContext>
+	public class BuildSystemUserSetting : IEquatable<BuildSystemUserSetting>
 	{
 		/// <summary>
 		/// Shipping directory
@@ -29,6 +28,16 @@ namespace Cqunity.BuildSystem
 		/// Shipping directory 경로에 Platform 이름 포함
 		/// </summary>
 		[SerializeField] public bool m_usePlatformName = default;
+
+		/// <summary>
+		/// 가장 최신 버전이 deploy 될 경로
+		/// </summary>
+		[SerializeField] public string m_deployPath = default;
+		
+		/// <summary>
+		/// 실제로 앱이 빌드될 상대 경로
+		/// </summary>
+		[SerializeField] public string m_workspacePath = default;
 		
 		/// <summary>
 		/// 경로를 가져옵니다.
@@ -64,7 +73,7 @@ namespace Cqunity.BuildSystem
 
 		#region IEquatable
 
-		public bool Equals(GlobalSettingContext other)
+		public bool Equals(BuildSystemUserSetting other)
 		{
 			if (this.m_buildPath != other?.m_buildPath) return false;
 			if (this.m_useCompanyName != other?.m_useCompanyName) return false;
@@ -77,7 +86,7 @@ namespace Cqunity.BuildSystem
 			if (ReferenceEquals(null, obj)) return false;
 			if (ReferenceEquals(this, obj)) return true;
 			if (obj.GetType() != this.GetType()) return false;
-			return Equals((GlobalSettingContext) obj);
+			return Equals((BuildSystemUserSetting) obj);
 		}
 
 		public override int GetHashCode()
@@ -87,29 +96,39 @@ namespace Cqunity.BuildSystem
 
 		#endregion
 		
-		public GlobalSettingContext()
+		public BuildSystemUserSetting()
 		{
 			m_buildPath = DEFAULT_BUILD_PATH;
+			
 			m_useCompanyName = DEFAULT_USE_COMPANY_NAME;
 			m_useProductName = DEFAULT_USE_PRODUCT_NAME;
+			m_usePlatformName = DEFAULT_USE_PLATFORM_NAME;
+
+			m_deployPath = DEFAULT_DEPLOY_PATH;
+			m_workspacePath = DEFAULT_WORKSPACE_PATH;
 		}
 		
 		private const string DEFAULT_BUILD_PATH = "D:/Unity Engine Build";
+		
 		private const bool DEFAULT_USE_COMPANY_NAME = false;
 		private const bool DEFAULT_USE_PRODUCT_NAME = true;
+		private const bool DEFAULT_USE_PLATFORM_NAME = true;
+
+		private const string DEFAULT_DEPLOY_PATH = "Deploy";
+		private const string DEFAULT_WORKSPACE_PATH = "Build";
 
 		private static string m_settingRootPath = Application.persistentDataPath.GetUpperDirectory(2);
-		private static string m_settingDirectory = m_settingRootPath + @"\Cqunity\BuildSetting.cqu";
+		private static string m_settingDirectory = m_settingRootPath + @"\Cqunity\BuildSetting.cq";
 		
 		public static string SettingPath {
 			get { return m_settingDirectory; }
 		}
 
-		private static GlobalSettingContext Get()
+		private static BuildSystemUserSetting Get()
 		{
 			if (!new FileInfo(m_settingDirectory).Exists)
 			{
-				GlobalSettingContext m_context = new GlobalSettingContext();
+				BuildSystemUserSetting m = new BuildSystemUserSetting();
 
 				DirectoryInfo directory = new DirectoryInfo(m_settingRootPath + @"\Cqunity");
 				if (!directory.Exists)
@@ -117,22 +136,22 @@ namespace Cqunity.BuildSystem
 					directory.Create();
 				}
 
-				File.WriteAllText(m_settingDirectory, JsonUtility.ToJson(m_context));
+				File.WriteAllText(m_settingDirectory, JsonUtility.ToJson(m));
 				Debug.Log("새 세팅파일이 생성되었습니다.");
 
-				return m_context;
+				return m;
 			}
 			else
 			{
-				return JsonUtility.FromJson<GlobalSettingContext>(File.ReadAllText(m_settingDirectory));
+				return JsonUtility.FromJson<BuildSystemUserSetting>(File.ReadAllText(m_settingDirectory));
 			}
 		}
 
-		public static GlobalSettingContext Load()
+		public static BuildSystemUserSetting Load()
 		{
-			GlobalSettingContext m_context = Get();
+			BuildSystemUserSetting m = Get();
 
-			return m_context;
+			return m;
 		}
 
 		public void Save()

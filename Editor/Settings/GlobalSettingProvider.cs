@@ -10,16 +10,16 @@ namespace Cqunity.BuildSystem
 		private const string SETTING_PATH = "/디렉터리";
 		private const string SETTING_GENERAL = "/일반";
 		
-		private static GlobalSettingContext m_context = default;
-		private static GlobalSettingContext Context {
+		private static BuildSystemUserSetting m = default;
+		private static BuildSystemUserSetting Context {
 			get
 			{
-				if (m_context == null)
+				if (m == null)
 				{
-					m_context = GlobalSettingContext.Load();
+					m = BuildSystemUserSetting.Load();
 				}
 		
-				return m_context;
+				return m;
 			}
 		}
 
@@ -69,15 +69,7 @@ namespace Cqunity.BuildSystem
 					using (new EditorGUILayout.HorizontalScope())
 					{
 						EditorGUILayout.LabelField("전체 경로", Context.GetFullPath());
-						// EditorGUILayout.LabelField(Context.GetFullPath());
 					}
-
-					// EditorGUI.indentLevel++;
-					// {
-					// 	EditorGUILayout.LabelField("전체 경로");
-					// 	EditorGUILayout.LabelField(Context.GetFullPath());
-					// }
-					// EditorGUI.indentLevel--;
 					
 					EditorGUILayout.Space(10);
 				}
