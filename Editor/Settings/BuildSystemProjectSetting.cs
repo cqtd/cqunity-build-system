@@ -23,7 +23,7 @@ namespace Cqunity.BuildSystem
 		public static string GetFilePath {
 			get
 			{
-				return Application.dataPath.GetUpperDirectory() + @"\ProjectSettings\BuildSystemSetting.cq";
+				return PathManagement.ProjectRoot + @"\ProjectSettings\BuildSystemSetting.cq";
 			}
 		}
 

@@ -18,6 +18,11 @@ namespace Cqunity.BuildSystem
             {
                 autoIncreaseBuildVersion = EditorPrefs.GetBool(autoIncreaseMenuName, true);
             }
+
+            if (!ValidateVersion())
+            {
+                FixVersion();
+            }
         }
 
         [MenuItem(autoIncreaseMenuName, false, 1)]
@@ -46,21 +51,18 @@ namespace Cqunity.BuildSystem
         [MenuItem(MENU_PATH + "Increase Season Version", false, 50)]
         private static void IncreaseSeason()
         {
-            string[] lines = PlayerSettings.bundleVersion.Split('.');
             EditVersion(1, 0, 0, 0);
         }
 
         [MenuItem(MENU_PATH + "Increase Major Version", false, 51)]
         private static void IncreaseMajor()
         {
-            string[] lines = PlayerSettings.bundleVersion.Split('.');
             EditVersion(0, 1, 0, 0);
         }
 
         [MenuItem(MENU_PATH + "Increase Minor Version", false, 52)]
         private static void IncreaseMinor()
         {
-            string[] lines = PlayerSettings.bundleVersion.Split('.');
             EditVersion(0, 0, 1, 0);
         }
 
@@ -108,6 +110,23 @@ namespace Cqunity.BuildSystem
                    MajorVersion.ToString("0") + "." +
                    MinorVersion.ToString("0") + "." +
                    Build.ToString("0");
+        }
+
+        private static bool ValidateVersion()
+        {
+            string[] lines = PlayerSettings.bundleVersion.Split('.');
+            if (lines.Length < 4)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void FixVersion()
+        {
+            PlayerSettings.bundleVersion = "0.0.0.1";
+            Debug.Log($"Version Updated! :: {PlayerSettings.bundleVersion}");
         }
 
         public static string GetCurrentBuildVersion()
