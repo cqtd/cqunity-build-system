@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Cqunity.BuildSystem
 {
 	[Serializable]
-	public class BuildSystemUserSetting : IEquatable<BuildSystemUserSetting>
+	public class BuildSystemUserSetting
 	{
 		/// <summary>
 		/// Shipping directory
@@ -71,31 +71,6 @@ namespace Cqunity.BuildSystem
 			return sb.ToString();
 		}
 
-		#region IEquatable
-
-		public bool Equals(BuildSystemUserSetting other)
-		{
-			if (this.m_buildPath != other?.m_buildPath) return false;
-			if (this.m_useCompanyName != other?.m_useCompanyName) return false;
-
-			return true;
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (ReferenceEquals(null, obj)) return false;
-			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != this.GetType()) return false;
-			return Equals((BuildSystemUserSetting) obj);
-		}
-
-		public override int GetHashCode()
-		{
-			return (m_buildPath + m_useCompanyName).GetHashCode();
-		}
-
-		#endregion
-		
 		public BuildSystemUserSetting()
 		{
 			m_buildPath = DEFAULT_BUILD_PATH;

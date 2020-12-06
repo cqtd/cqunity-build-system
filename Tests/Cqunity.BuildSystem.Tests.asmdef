@@ -1,6 +1,8 @@
 {
-    "name": "CQ.BuildSystem.Editor",
-    "references": [],
+    "name": "Cqunity.BuildSystem.Tests",
+    "references": [
+        "GUID:9696db66386e2804d8173a20b9d69ca0"
+    ],
     "includePlatforms": [
         "Editor"
     ],
@@ -8,7 +10,7 @@
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

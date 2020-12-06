@@ -33,8 +33,8 @@ namespace Cqunity.BuildSystem
 				return GetFilePath.GetUpperDirectory();
 			}
 		}
-		
-		private static BuildSystemProjectSetting Get()
+
+		public static BuildSystemProjectSetting Load()
 		{
 			if (!new FileInfo(GetFilePath).Exists)
 			{
@@ -46,15 +46,8 @@ namespace Cqunity.BuildSystem
 
 				return m_context;
 			}
-			else
-			{
-				return JsonUtility.FromJson<BuildSystemProjectSetting>(File.ReadAllText(GetFilePath));
-			}
-		}
 
-		public static BuildSystemProjectSetting Load()
-		{
-			return Get();
+			return JsonUtility.FromJson<BuildSystemProjectSetting>(File.ReadAllText(GetFilePath));
 		}
 
 		public void Save()
