@@ -9,6 +9,29 @@ namespace Cqunity.BuildSystem
 	public class BuildSystemProjectSetting
 	{
 		[SerializeField] private BuildTarget m_buildTarget = default;
+		[SerializeField] private bool useGlobalCacheDirectory = default;
+		[SerializeField] private bool increaseVersionAutomatically = default;
+		[SerializeField] private string globalDirectory = default;
+		
+		private bool isMarkAsDirty = default;
+
+		public BuildSystemProjectSetting()
+		{
+			m_buildTarget = EditorUserBuildSettings.activeBuildTarget;
+
+			useGlobalCacheDirectory = true;
+			increaseVersionAutomatically = true;
+			globalDirectory = "D:/Unity/Build Cache";
+		}
+
+		public static string GlobalArchiveDirectory {
+			get => Load().globalDirectory;
+		}
+
+		public static bool UseGlobalArchive {
+			get => Load().useGlobalCacheDirectory;
+		}
+		
 		public BuildTarget BuildTarget {
 			get
 			{
@@ -17,13 +40,39 @@ namespace Cqunity.BuildSystem
 			set
 			{
 				m_buildTarget = value;
+				isMarkAsDirty = true;
 			}
 		}
 
+		public bool UseGlobalCacheDirectory {
+			get
+			{
+				return useGlobalCacheDirectory;
+			}
+			set
+			{
+				useGlobalCacheDirectory = value;
+				isMarkAsDirty = true;
+			}
+		}
+		
+		public bool IncreaseVersionAutomatically {
+			get
+			{
+				return increaseVersionAutomatically;
+			}
+			set
+			{
+				increaseVersionAutomatically = value;
+				isMarkAsDirty = true;
+			}
+		}
+		
+		
 		public static string GetFilePath {
 			get
 			{
-				return PathManagement.ProjectRoot + @"\ProjectSettings\BuildSystemSetting.cq";
+				return PathManagement.ProjectRoot + @"\ProjectSettings\BuildSystemSetting.asset";
 			}
 		}
 
@@ -53,6 +102,15 @@ namespace Cqunity.BuildSystem
 		public void Save()
 		{
 			File.WriteAllText(GetFilePath, JsonUtility.ToJson(this));
+			isMarkAsDirty = false;
+		}
+
+		public void SaveIfDirty()
+		{
+			if (isMarkAsDirty)
+			{
+				Save();
+			}
 		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using UnityEditor;
+using UnityEngine;
 
 namespace Cqunity.BuildSystem
 {
@@ -8,6 +9,13 @@ namespace Cqunity.BuildSystem
 			get
 			{
 				return PlayerSettings.productName;
+			}
+		}
+	
+		public static string ProjectRoot {
+			get
+			{
+				return Application.dataPath.Replace("/Assets","");
 			}
 		}
 	}

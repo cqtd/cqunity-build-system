@@ -8,16 +8,16 @@ namespace Cqunity.BuildSystem
     public class VersionManager
     {
         private const string MENU_PATH = "Build/Version/";
-        private static bool autoIncreaseBuildVersion;
+        // private static bool autoIncreaseBuildVersion;
 
-        private const string autoIncreaseMenuName = MENU_PATH + "빌드 버전 자동 올리기";
+        // private const string autoIncreaseMenuName = MENU_PATH + "빌드 버전 자동 올리기";
 
         static VersionManager()
         {
-            if (EditorApplication.timeSinceStartup < 10f)
-            {
-                autoIncreaseBuildVersion = EditorPrefs.GetBool(autoIncreaseMenuName, true);
-            }
+            // if (EditorApplication.timeSinceStartup < 10f)
+            // {
+            //     autoIncreaseBuildVersion = EditorPrefs.GetBool(autoIncreaseMenuName, true);
+            // }
 
             if (!ValidateVersion())
             {
@@ -25,20 +25,20 @@ namespace Cqunity.BuildSystem
             }
         }
 
-        [MenuItem(autoIncreaseMenuName, false, 1)]
-        private static void SetAutoIncrease()
-        {
-            autoIncreaseBuildVersion = !autoIncreaseBuildVersion;
-            EditorPrefs.SetBool(autoIncreaseMenuName, autoIncreaseBuildVersion);
-            Debug.Log("Auto Increase : " + autoIncreaseBuildVersion);
-        }
-
-        [MenuItem(autoIncreaseMenuName, true)]
-        private static bool SetAutoIncreaseValidate()
-        {
-            Menu.SetChecked(autoIncreaseMenuName, autoIncreaseBuildVersion);
-            return true;
-        }
+        // [MenuItem(autoIncreaseMenuName, false, 1)]
+        // private static void SetAutoIncrease()
+        // {
+        //     autoIncreaseBuildVersion = !autoIncreaseBuildVersion;
+        //     EditorPrefs.SetBool(autoIncreaseMenuName, autoIncreaseBuildVersion);
+        //     Debug.Log("Auto Increase : " + autoIncreaseBuildVersion);
+        // }
+        //
+        // [MenuItem(autoIncreaseMenuName, true)]
+        // private static bool SetAutoIncreaseValidate()
+        // {
+        //     Menu.SetChecked(autoIncreaseMenuName, autoIncreaseBuildVersion);
+        //     return true;
+        // }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         [MenuItem(MENU_PATH + "현재 버전 확인", false, 2)]
@@ -94,7 +94,8 @@ namespace Cqunity.BuildSystem
         [PostProcessBuild(1)]
         public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
         {
-            if (autoIncreaseBuildVersion) IncreaseBuild();
+            if (BuildSystemProjectSetting.Load().IncreaseVersionAutomatically) 
+                IncreaseBuild();
         }
 
         public static string GetNextBuildVersion()

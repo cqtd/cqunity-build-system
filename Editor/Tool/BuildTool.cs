@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Build.Content;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -10,22 +11,30 @@ namespace Cqunity.BuildSystem
 {
 	public class BuildTool
 	{
-		private static readonly string projectPath = Application.dataPath.Replace("/Assets", "");
-
 		private static readonly string date = DateTime.Now.ToString("yyyy-MM-dd");
 		private static readonly string time = DateTime.Now.ToString("hh:mm:ss tt");
 
 		// for release
-		private static readonly string deployRootPath = projectPath + "/Deploy";
-		private static readonly string deployPlatformPath = deployRootPath + "/{0}";
+		private static readonly string deployDir = Wildcard.ProjectRoot + "/Build/deploy";
+		private static readonly string deployDirFormat = deployDir + "/{0}";
 		
 		// for initial build
-		private static readonly string containerRootPath = projectPath + "/Container";
-		private static readonly string containerPlatformPath = containerRootPath + "/{0}/{1}";
+		private static readonly string stageDir = Wildcard.ProjectRoot + "/Build/container";
+		private static readonly string stageDirFormat = stageDir + "/{0}/{1}";
 		
 		// for archive
-		private static readonly string archiveRootPath = projectPath + "/Build";
-		private static readonly string archivePlatformPath = archiveRootPath + "/{0}/{1}";
+		private static readonly string archiveRootPath = Wildcard.ProjectRoot + "/Build/archive";
+		private static readonly string archiveDirFormat = archiveRootPath + "/{0}/{1}";
+		
+		
+		// latest build
+		// project root / Build / latest / {BuildTarget} / .exe or .apk or .abb
+		
+		// archive build
+		// archive root / company name / product name / {BuildTarget} / version
+		
+		// deploy
+		// deploy root / 
 
 		#region Build/Platform
 
@@ -57,6 +66,31 @@ namespace Cqunity.BuildSystem
 			Build_Internal(BuildTarget.StandaloneWindows64, true);
 		}
 		
+		[MenuItem("Build/Platform/Android Mono", false, 540)]
+		private static void Build_Android_Mono()
+		{
+			if (!DisplayConfirmMessage("Android Mono")) return;
+			
+			Console.Clear();
+			
+			Build_Internal(BuildTarget.Android, true);
+		}
+		
+		[MenuItem("Build/Platform/Android IL2CPP", false, 541)]
+		private static void Build_Android_il2cpp()
+		{
+			if (!DisplayConfirmMessage("Android IL2CPP")) return;
+			
+			Console.Clear();
+			
+			ScriptingImplementation previous = PlayerSettings.GetScriptingBackend(BuildTargetGroup.Android);
+			PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+				
+			Build_Internal(BuildTarget.Android, true);
+			
+			PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, previous);
+		}
+		
 		
 		[MenuItem("Build/Create Build Information")]
 		private static void Menu_UpdateBuildInfo()
@@ -66,62 +100,88 @@ namespace Cqunity.BuildSystem
 
 		#endregion
 
-		private class Logger
+		[MenuItem("Build/Android")]
+		private static void Build_Android()
 		{
-			private BuildTarget target;
-			private bool enable;
+			Console.Clear();
 			
-			public Logger(BuildTarget target, bool enable)
-			{
-				this.target = target;
-				this.enable = enable;
-			}
-
-			public void Verbose(string msg)
-			{
-				if (!enable) return;
-				
-				Debug.Log($"[{target}] {msg}");
-			}
+			string buildDirectory = $"{Wildcard.ProjectRoot}/Build/stage/{BuildTarget.Android}";
 			
-			public void Success(string msg)
-			{
-				if (!enable) return;
-				
-				Debug.Log($"<color=green>[{target}] {msg}</color>");
-			}
+			string filename = PlayerSettings.applicationIdentifier + "_v" + VersionManager.GetCurrentBuildVersion();
+			string extension = EditorUserBuildSettings.buildAppBundle ? ".aab" : ".apk";
+			
+			Debug.Log(buildDirectory);
 
-			public void Warn(string msg)
-			{
-				if (!enable) return;
-				
-				Debug.Log($"<color=yellow>[{target}] {msg}</color>");
-			}
+			string latestDirectory = $"{Wildcard.ProjectRoot}/Build/latest";
+			string archiveDirectory = BuildSystemProjectSetting.UseGlobalArchive
+				? $"{BuildSystemProjectSetting.GlobalArchiveDirectory}/{Wildcard.ProjectName}"
+				: $"{Wildcard.ProjectRoot}/Build/archive";
 
-			public void Fatal(string msg)
+			DirectoryInfo buildDir = new DirectoryInfo(buildDirectory);
+			DirectoryInfo latestDir = new DirectoryInfo(latestDirectory);
+			DirectoryInfo archiveDir = new DirectoryInfo(archiveDirectory);
+			
+			buildDir.CreateIfNotExist();
+			latestDir.CreateIfNotExist();
+			archiveDir.CreateIfNotExist();
+
+			string output = $"{buildDirectory}/{filename}{extension}";
+
+			Debug.Log($"Estimated output :: {output}");
+
+			PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
+				out string[] defines);
+			
+			// 빌드 옵션
+			BuildPlayerOptions options = new BuildPlayerOptions
 			{
-				if (!enable) return;
+				scenes = EditorBuildSettings.scenes.Select(e => e.path).ToArray(),
+				target = BuildTarget.Android,
+				locationPathName = output,
+				extraScriptingDefines = defines,
+			};
+			
+			// 빌드
+			BuildReport report = BuildPipeline.BuildPlayer(options);
+
+			if (report.summary.result == BuildResult.Succeeded)
+			{
+				// 아카이브 경로로 카피
+				FileManagement.CopyFilesRecursive(buildDir, archiveDir);
 				
-				Debug.Log($"<color=red>[{target}] {msg}</color>");
+
+				// 최신 버전 경로로 카피
+				// 배포 경로로 카피
+				FileManagement.CopyFilesRecursive(
+					buildDir,
+					latestDir,
+					"BackUpThisFolder_ButDontShipItWithYourGame"
+				);
+				
+				Debug.Log($"<color=yellow>[{options.target}] Build Complete.</color>");
 			}
 		}
+		
 
 		private static bool Build_Internal(BuildTarget target, bool increaseVersion = false, bool logger = true)
 		{
-			Logger log = new Logger(target, logger);
-			
-			// 빌드 후 아카이브 될 경로
-			string archiveBuildPath = string.Format(archivePlatformPath, VersionManager.GetCurrentBuildVersion(), target.ToString());
-			DirectoryInfo archiveDir = new DirectoryInfo(archiveBuildPath);
-			if (!archiveDir.Exists) archiveDir.Create();
-			log.Verbose($"아카이브 경로 : {archiveDir.FullName}");
+			BuildLog log = new BuildLog(target, logger);
 
-			// 배포 경로
-			string deployBuildPath = string.Format(deployPlatformPath, target.ToString());
-			DirectoryInfo deployDir = new DirectoryInfo(deployBuildPath);
-			if (!deployDir.Exists) deployDir.Create();
-			log.Verbose($"배포 경로 : {deployDir.FullName}");
+			DirectoryInfo ConfigurePath(string description, string pathFormat, params object[] args)
+			{
+				string root = string.Format(pathFormat, args);
+				DirectoryInfo di = new DirectoryInfo(root);
+
+				if (!di.Exists)
+					di.Create();
+				
+				log.Verbose($"{description} 경로 : {di.FullName}");
+				return di;
+			}
 			
+			DirectoryInfo archieveDi = ConfigurePath("아카이브", archiveDirFormat, VersionManager.GetCurrentBuildVersion(), target);
+			DirectoryInfo deployDi = ConfigurePath("배포", deployDirFormat, target);
+
 			// 실제 빌드 될 경로
 			string folderDir;
 			string playerDir;
@@ -129,17 +189,30 @@ namespace Cqunity.BuildSystem
 			switch (target)
 			{
 				case BuildTarget.StandaloneWindows64:
-					folderDir = string.Format(containerPlatformPath, target.ToString(), $"{Wildcard.ProjectName}");
+					folderDir = string.Format(stageDirFormat, target.ToString(), $"{Wildcard.ProjectName}");
 					playerDir = folderDir + $"/{Wildcard.ProjectName}.exe";
 					break;
 
 				case BuildTarget.WebGL:
-					folderDir = string.Format(containerPlatformPath, target.ToString(), $"{Wildcard.ProjectName}");
+					folderDir = string.Format(stageDirFormat, target.ToString(), $"{Wildcard.ProjectName}");
 					playerDir = folderDir;
+
 					break;
-				
+
 				case BuildTarget.iOS:
 				case BuildTarget.Android:
+				{
+					folderDir = string.Format(stageDirFormat, target.ToString(), $"{Wildcard.ProjectName}");
+					if (EditorUserBuildSettings.buildAppBundle)
+					{
+						playerDir = folderDir +$"/{Wildcard.ProjectName}.aab";
+					}
+					else
+					{
+						playerDir = folderDir +$"/{Wildcard.ProjectName}.apk";
+					}
+					break;
+				}
 				case BuildTarget.StandaloneOSX:
 				case BuildTarget.StandaloneWindows:
 				case BuildTarget.WSAPlayer:
@@ -166,26 +239,30 @@ namespace Cqunity.BuildSystem
 			log.Verbose($"빌드 폴더 경로 : {unityFolderDir.FullName}");
 			log.Verbose($"빌드 플레이어 경로 : {unityPlayerDir.FullName}");
 
+			PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
+				out var defines);
+			
 			// 빌드 옵션
 			BuildPlayerOptions options = new BuildPlayerOptions
 			{
 				scenes = EditorBuildSettings.scenes.Select(e => e.path).ToArray(),
 				target = target,
 				locationPathName = unityPlayerDir.FullName,
-				extraScriptingDefines = new[] {"UNITY_POST_PROCESSING_STACK_V2", "ENABLE_VISUAL_DEBUGGER"},
+				extraScriptingDefines = defines,
 			};
+			
 
 			BuildReport report = BuildPipeline.BuildPlayer(options);
 
 			if (report.summary.result == BuildResult.Succeeded)
 			{
 				// 아카이브 경로로 카피
-				FileManagement.CopyFilesRecursive(unityFolderDir, archiveDir);
+				FileManagement.CopyFilesRecursive(unityFolderDir, archieveDi);
 				
 				// 배포 경로로 카피
 				FileManagement.CopyFilesRecursive(
 					unityFolderDir,
-					deployDir,
+					deployDi,
 					"BackUpThisFolder_ButDontShipItWithYourGame"
 					);
 				
@@ -197,6 +274,8 @@ namespace Cqunity.BuildSystem
 
 			return false;
 		}
+		
+		
 
 		#region Utility
 
